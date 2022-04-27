@@ -3,8 +3,6 @@ use anyhow::{Context, Result};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io;
-use std::process;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(unused)]
@@ -34,17 +32,27 @@ fn read_file() -> Result<Vec<StringRecord>> {
     Ok(records)
 }
 
-fn filter_store(records: Vec<StringRecord>) -> Result<Vec<StringRecord>> {
+fn filter_store(records: Vec<StringRecord>, list: Vec<&str>) -> Result<Vec<StringRecord>> {
     let mut filtered_records = vec![];
-    let store = "014";
+    let store = "130"; // Store number hard coded for POC
 
-    for each in records.into_iter() {
-        if each.get(0).unwrap().to_string().contains(&store) {
-            filtered_records.push(each)
+    for num in list {
+        for each in records.clone().into_iter() {
+            if each.get(0).unwrap().to_string().contains(num) {
+                filtered_records.push(each)
+            }
         }
     }
 
     Ok(filtered_records)
+}
+
+fn has_rfid(record: &StringRecord) -> bool {
+    if record.get(4).unwrap().to_string().contains("$") {
+        return true;
+    }
+
+    return false;
 }
 
 fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
@@ -52,17 +60,31 @@ fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
     let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
     for each in records.iter() {
-        wtr.serialize(Po {
-            po: each.get(0).unwrap().to_owned(),
-            style_code: each.get(1).unwrap().to_owned(),
-            color_code: each.get(2).unwrap().to_owned(),
-            msrp_size: each.get(3).unwrap().to_owned(),
-            style_desc: each.get(4).unwrap().to_owned(),
-            color_desc: each.get(5).unwrap().to_owned(),
-            upc: each.get(6).unwrap().to_owned(),
-            store_num: "".to_owned(), // This field must an empty string
-            qty: each.get(8).unwrap().to_owned(),
-        })?;
+        if has_rfid(each) {
+            wtr.serialize(Po {
+                po: each.get(0).unwrap().to_owned(),
+                style_code: each.get(1).unwrap().to_owned(),
+                color_code: each.get(2).unwrap().to_owned(),
+                msrp_size: each.get(3).unwrap().to_owned(),
+                style_desc: each.get(4).unwrap().to_owned(),
+                color_desc: each.get(5).unwrap().to_owned(),
+                upc: each.get(6).unwrap().to_owned(),
+                store_num: "".to_owned(), // This field must an empty string
+                qty: "0".to_owned(),      // If it has RFID then set qty to 0
+            })?;
+        } else {
+            wtr.serialize(Po {
+                po: each.get(0).unwrap().to_owned(),
+                style_code: each.get(1).unwrap().to_owned(),
+                color_code: each.get(2).unwrap().to_owned(),
+                msrp_size: each.get(3).unwrap().to_owned(),
+                style_desc: each.get(4).unwrap().to_owned(),
+                color_desc: each.get(5).unwrap().to_owned(),
+                upc: each.get(6).unwrap().to_owned(),
+                store_num: "".to_owned(), // This field must an empty string
+                qty: each.get(8).unwrap().to_owned(),
+            })?;
+        }
     }
     wtr.flush()?;
 
@@ -70,9 +92,10 @@ fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    let store_list: Vec<&str> = vec!["127", "130"];
     let results = read_file()?;
     // println!("{:#?}", results);
-    let results = filter_store(results)?;
+    let results = filter_store(results, store_list)?;
 
     wrtie_file(results);
     Ok(())
