@@ -5,6 +5,7 @@ use std::io;
 use std::process;
 
 #[derive(Debug, Deserialize)]
+#[allow(unused)]
 struct Po {
     po: String,
     style_code: String,
@@ -18,7 +19,7 @@ struct Po {
 }
 
 fn read_file() -> Result<()> {
-    let file_path = "examples/RFID.csv";
+    let file_path = "examples/RFID.csv"; // Hard coded path for debugging.
     let file = File::open(file_path).context("Failed to open file")?;
     let mut rdr = csv::Reader::from_reader(file);
     for result in rdr.records() {
