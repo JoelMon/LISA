@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use anyhow::{Context, Result};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,15 @@ fn read_file() -> Result<Vec<StringRecord>> {
     }
 
     Ok(records)
+}
+
+fn filter_store(records: Vec<StringRecord>) -> Result<(Vec<StringRecord>)> {
+    let mut filtered_records = records
+        .iter()
+        .filter_map(|x| x.get(0).contains(&Some("23")))
+        .collect();
+
+    Ok(filtered_records)
 }
 
 fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
