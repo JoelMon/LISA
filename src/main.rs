@@ -1,11 +1,13 @@
 use anyhow::{Context, Result};
-use serde::Deserialize;
+use csv::StringRecord;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io;
 use std::process;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(unused)]
+#[serde(rename_all = "PascalCase")]
 struct Po {
     po: String,
     style_code: String,
@@ -18,20 +20,21 @@ struct Po {
     qty: i64,
 }
 
-fn read_file() -> Result<()> {
+fn read_file() -> Result<Vec<StringRecord>> {
     let file_path = "examples/RFID.csv"; // Hard coded path for debugging.
     let file = File::open(file_path).context("Failed to open file")?;
     let mut rdr = csv::Reader::from_reader(file);
+    let mut records: Vec<StringRecord> = vec![];
+
     for result in rdr.records() {
-        let record = result?;
-        println!("{:?}", record);
+        records.push(result?);
     }
 
-    Ok(())
+    Ok(records)
 }
 
 fn main() -> Result<()> {
     let results = read_file()?;
-    println!("{:?}", results);
+    println!("{:#?}", results);
     Ok(())
 }
