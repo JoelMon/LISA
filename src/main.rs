@@ -34,11 +34,15 @@ fn read_file() -> Result<Vec<StringRecord>> {
     Ok(records)
 }
 
-fn filter_store(records: Vec<StringRecord>) -> Result<(Vec<StringRecord>)> {
-    let mut filtered_records = records
-        .iter()
-        .filter_map(|x| x.get(0).contains(&Some("23")))
-        .collect();
+fn filter_store(records: Vec<StringRecord>) -> Result<Vec<StringRecord>> {
+    let mut filtered_records = vec![];
+    let store = "014";
+
+    for each in records.into_iter() {
+        if each.get(0).unwrap().to_string().contains(&store) {
+            filtered_records.push(each)
+        }
+    }
 
     Ok(filtered_records)
 }
@@ -68,6 +72,8 @@ fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
 fn main() -> Result<()> {
     let results = read_file()?;
     // println!("{:#?}", results);
+    let results = filter_store(results)?;
+
     wrtie_file(results);
     Ok(())
 }
