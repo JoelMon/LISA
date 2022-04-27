@@ -34,7 +34,8 @@ fn read_file() -> Result<Vec<StringRecord>> {
 }
 
 fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
-    let mut wtr = csv::Writer::from_writer(io::stdout());
+    let file_path = "examples/RFID_2.csv"; // Hard coded path for debugging.
+    let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
     for each in records.iter() {
         wtr.serialize(Po {
@@ -45,7 +46,7 @@ fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
             style_desc: each.get(4).unwrap().to_owned(),
             color_desc: each.get(5).unwrap().to_owned(),
             upc: each.get(6).unwrap().to_owned(),
-            store_num: each.get(7).unwrap().to_owned(),
+            store_num: "".to_owned(), // This field must an empty string
             qty: each.get(8).unwrap().to_owned(),
         })?;
     }
