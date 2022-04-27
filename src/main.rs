@@ -2,6 +2,7 @@ use anyhow::Ok;
 use anyhow::{Context, Result};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs::File;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -55,11 +56,17 @@ fn has_rfid(record: &StringRecord) -> bool {
     return false;
 }
 
+// A hashset of unique store POs found in order to be able to create unique files
+fn found_stores(records: &StringRecord) -> HashSet<String> {
+    todo!();
+}
+
 fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
     let file_path = "examples/RFID_2.csv"; // Hard coded path for debugging.
     let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
     for each in records.iter() {
+        // Filter orders that has a '$' to qty "0".
         if has_rfid(each) {
             wtr.serialize(Po {
                 po: each.get(0).unwrap().to_owned(),
@@ -94,7 +101,6 @@ fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
 fn main() -> Result<()> {
     let store_list: Vec<&str> = vec!["127", "130"];
     let results = read_file()?;
-    // println!("{:#?}", results);
     let results = filter_store(results, store_list)?;
 
     wrtie_file(results);
