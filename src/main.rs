@@ -98,6 +98,17 @@ fn write_file(records: Vec<StringRecord>) -> Result<()> {
     Ok(())
 }
 
+fn split_files() -> Result<()> {
+    let data = read_file()?;
+
+    let mut current_store: String = String::new();
+    for store in data {
+        store.get(0)
+    }
+
+    todo!()
+}
+
 fn main() -> Result<()> {
     let store_list: Vec<&str> = vec!["127", "130"];
     let results = read_file()?;
