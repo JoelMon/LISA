@@ -61,7 +61,7 @@ fn found_stores(records: &StringRecord) -> HashSet<String> {
     todo!();
 }
 
-fn wrtie_file(records: Vec<StringRecord>) -> Result<()> {
+fn write_file(records: Vec<StringRecord>) -> Result<()> {
     let file_path = "examples/RFID_2.csv"; // Hard coded path for debugging.
     let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
@@ -103,6 +103,6 @@ fn main() -> Result<()> {
     let results = read_file()?;
     let results = filter_store(results, store_list)?;
 
-    wrtie_file(results);
+    write_file(results);
     Ok(())
 }
