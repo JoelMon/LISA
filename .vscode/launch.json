@@ -1,0 +1,49 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'lisa'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=lisa",
+                    "--package=lisa"
+                ],
+                "filter": {
+                    "name": "lisa",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "--output=examples/",
+                "--input=examples/RFID3.csv",
+                "--list=examples/list.txt",
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'lisa'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=lisa",
+                    "--package=lisa"
+                ],
+                "filter": {
+                    "name": "lisa",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
