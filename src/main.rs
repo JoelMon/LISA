@@ -5,6 +5,7 @@ use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -45,12 +46,12 @@ fn read_file(file_path: PathBuf) -> Result<Vec<StringRecord>> {
     Ok(records)
 }
 
-fn filter_store(records: Vec<StringRecord>, list: Vec<&str>) -> Result<Vec<StringRecord>> {
+fn filter_store(records: Vec<StringRecord>, list: Vec<String>) -> Result<Vec<StringRecord>> {
     let mut filtered_records = vec![];
 
     for num in list {
         for item in records.clone().into_iter() {
-            if item.get(0).unwrap().to_string().contains(num) {
+            if item.get(0).unwrap().to_owned().contains(&num) {
                 filtered_records.push(item)
             }
         }
@@ -67,6 +68,19 @@ fn has_rfid(record: &StringRecord) -> bool {
     return false;
 }
 
+fn list(path: PathBuf) -> Vec<String> {
+    let file = std::fs::read_to_string(path)
+        .expect("Could not read the file containing the stores to search for, check file")
+        .lines()
+        .collect::<String>();
+
+    let file = file
+        .split(",")
+        .map(|x| x.to_owned())
+        .collect::<Vec<String>>();
+    file
+}
+
 fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<()> {
     let store_list = records
         .iter()
@@ -74,8 +88,7 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
         .collect::<HashSet<String>>();
 
     for store in store_list {
-        let mut dest = destination_path;
-        let mut file_path = dest.set_file_name(store);
+        let file_path = dbg!(destination_path.with_file_name(&store));
         let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
         for each in records.iter() {
@@ -115,7 +128,7 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
 fn main() -> Result<()> {
     let arg = Args::parse();
 
-    let store_list: Vec<&str> = vec!["014", "071", "123", "010", "100"];
+    let store_list: Vec<String> = list(arg.list);
     let results = read_file(arg.input)?;
     let results = filter_store(results, store_list)?;
     write_file(results, arg.output)?;
