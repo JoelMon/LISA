@@ -1,11 +1,9 @@
-use anyhow::Ok;
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -87,9 +85,11 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
         .map(|num| num.get(0).unwrap().to_owned())
         .collect::<HashSet<String>>();
 
+    let file_path = dbg!(destination_path);
+
     for store in store_list {
-        let file_path = destination_path.with_file_name(format!("{}.csv", &store));
-        let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
+        let file_name = dbg!(file_path.join(format!("{}.csv", &store)));
+        let mut wtr = csv::Writer::from_writer(File::create(file_name)?);
 
         for each in records.iter() {
             // Filter orders that has a '$' to qty "0".
