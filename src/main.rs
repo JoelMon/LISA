@@ -75,7 +75,7 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
 
     for store in store_list {
         let mut dest = destination_path;
-        let mut file_path = dest.set_file_name("test");
+        let mut file_path = dest.set_file_name(store);
         let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
         for each in records.iter() {
