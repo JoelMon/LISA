@@ -2,12 +2,10 @@
 authors = ["Joel Montes de Oca"]
 edition = "2021"
 name = "lisa"
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies]
 anyhow = "1.0"
-clap = {version = "3.1",  features = ["derive"]} 
+clap = { version = "3.1", features = ["derive"] }
 csv = "1"
-serde = {version = "1", features = ["derive"]}
-
-
+serde = { version = "1", features = ["derive"] }

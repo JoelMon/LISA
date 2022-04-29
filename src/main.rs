@@ -88,7 +88,7 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
         .collect::<HashSet<String>>();
 
     for store in store_list {
-        let file_path = dbg!(destination_path.with_file_name(&store));
+        let file_path = destination_path.with_file_name(format!("{}.csv", &store));
         let mut wtr = csv::Writer::from_writer(File::create(file_path)?);
 
         for each in records.iter() {
