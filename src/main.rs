@@ -20,7 +20,7 @@ struct Args {
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(unused)]
 #[serde(rename_all = "PascalCase")]
-struct Po {
+struct Order {
     po: String,
     style_code: String,
     color_code: String,
@@ -44,6 +44,15 @@ fn read_file(file_path: PathBuf) -> Result<Vec<StringRecord>> {
     Ok(records)
 }
 
+// filter_store() returns a vector of items that are found in `list: Vec<String>`.
+//
+// The csv files received for purchase orders for direct to store includes orders made for a
+// variety of different stores. Each store is identified by a _store number_.
+// This function takes a list which is a list of store numbers we
+// are interested in and returns only the POs of the sores found in the list.
+//
+// The `list` is made by the end user. It is a text file that lists the store numbers
+// to be returned.
 fn filter_store(records: Vec<StringRecord>, list: Vec<String>) -> Result<Vec<StringRecord>> {
     let mut filtered_records = vec![];
 
@@ -58,6 +67,15 @@ fn filter_store(records: Vec<StringRecord>, list: Vec<String>) -> Result<Vec<Str
     Ok(filtered_records)
 }
 
+// has_rfid() returns a `true` if an item is _thought_ to have a RFID tag already applied
+// from the factory.
+//
+// Some items already have an RFID tag applied, or will have one in the near future. Items
+// that may have said RFID will have a `$` charter at the end of the  item name description.
+//
+// The reason we care to know this information within the context of this application is because
+// if an item already has an RFID tag, we do not need to print an RFID tag. This function dictates
+// weather the qty is left as is or set to `0`.
 fn has_rfid(record: &StringRecord) -> bool {
     if record.get(4).unwrap().to_string().contains("$") {
         return true;
@@ -66,6 +84,20 @@ fn has_rfid(record: &StringRecord) -> bool {
     return false;
 }
 
+// list() takes a path to a text file which contains a list of numbers store numbers.
+//
+// The csv files received for purchase orders for direct to store includes orders made for a
+// variety of different stores. Each store is identified by a _store number_.
+//
+// This function reads the text file the end user creates which lists all the store numbers
+// we are interested in. Each store number contains three digits, for example store `1` would
+// be written as `001. Each of the store numbers _must_ be written using a three digit format
+// or errors, such as items duplication, will occur. Also, each store number must be separated by
+// comma, `,`, for the `list` function to work.
+//
+// TODO: Come up with a better and more robust method to acquire store numbers from the user.
+// TODO: Perhaps using a format such as TOML.
+// TODO: Also, write checks and tests to catch user errors when store numbers are added, such as one or two digits for a store number.
 fn list(path: PathBuf) -> Vec<String> {
     let file = std::fs::read_to_string(path)
         .expect("Could not read the file containing the stores to search for, check file")
@@ -80,21 +112,31 @@ fn list(path: PathBuf) -> Vec<String> {
 }
 
 fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<()> {
+    // By using a HashSet, we remove all duplicated records from the vector.
+    // We aquire a set of unique POs that we can use as file names below.
     let store_list = records
         .iter()
         .map(|num| num.get(0).unwrap().to_owned())
         .collect::<HashSet<String>>();
 
-    let file_path = dbg!(destination_path);
+    let file_path = destination_path;
 
+    // This outer loop creates a file and iterates through `store_list` to find the POs for said file.
+    //
+    // For example, if we have a store_list of the following POs: ["po14423-001", "po14423-002", "po14423-003"]
+    // then this outer loop will step through the list and pull out each po one at a time and do the following:
+    //      1) Set the po as a file name
+    //      2) Create a find all matching POs in store_list and use it with `wtr.serialize()`
+    //      3) Push it to a file
     for store in store_list {
         let file_name = dbg!(file_path.join(format!("{}.csv", &store)));
         let mut wtr = csv::Writer::from_writer(File::create(file_name)?);
 
         for each in records.iter() {
-            // Filter orders that has a '$' to qty "0".
+            // If an item contains a `$` in the name description, then the qty should be set to `0`.
+            // See comments for `has_rfid()`.
             if has_rfid(each) && each.get(0).unwrap().to_owned() == store {
-                wtr.serialize(Po {
+                wtr.serialize(Order {
                     po: each.get(0).unwrap().to_owned(),
                     style_code: each.get(1).unwrap().to_owned(),
                     color_code: each.get(2).unwrap().to_owned(),
@@ -102,11 +144,11 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
                     style_desc: each.get(4).unwrap().to_owned(),
                     color_desc: each.get(5).unwrap().to_owned(),
                     upc: each.get(6).unwrap().to_owned(),
-                    store_num: "".to_owned(), // This field must an empty string
-                    qty: "0".to_owned(),      // If it has RFID then set qty to 0
+                    store_num: "".to_owned(), // This field must always be an empty string
+                    qty: "0".to_owned(),      // If it `has_rfid` is `true` then set qty to 0
                 })?;
             } else if each.get(0).unwrap().to_owned() == store {
-                wtr.serialize(Po {
+                wtr.serialize(Order {
                     po: each.get(0).unwrap().to_owned(),
                     style_code: each.get(1).unwrap().to_owned(),
                     color_code: each.get(2).unwrap().to_owned(),
@@ -114,7 +156,7 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
                     style_desc: each.get(4).unwrap().to_owned(),
                     color_desc: each.get(5).unwrap().to_owned(),
                     upc: each.get(6).unwrap().to_owned(),
-                    store_num: "".to_owned(), // This field must an empty string
+                    store_num: "".to_owned(), // This field must always be an empty string
                     qty: each.get(8).unwrap().to_owned(),
                 })?;
             }
