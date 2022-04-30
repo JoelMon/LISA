@@ -8,11 +8,14 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
-struct Args {
+struct Cli {
+    /// The PO csv file to be used
     #[clap(short, long)]
     input: PathBuf,
+    /// The destination directory where the processed POs will be saved
     #[clap(short, long)]
     output: PathBuf,
+    /// The text file that contains all of the store numbers to be processed
     #[clap(short, long)]
     list: PathBuf,
 }
@@ -168,11 +171,11 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
 }
 
 fn main() -> Result<()> {
-    let arg = Args::parse();
+    let args = Cli::parse();
 
-    let store_list: Vec<String> = list(arg.list);
-    let results = read_file(arg.input)?;
+    let store_list: Vec<String> = list(args.list);
+    let results = read_file(args.input)?;
     let results = filter_store(results, store_list)?;
-    write_file(results, arg.output)?;
+    write_file(results, args.output)?;
     Ok(())
 }

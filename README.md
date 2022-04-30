@@ -1,2 +1,2 @@
 # LISA
-LISA, Label RFID Splitting Arrangement, program takes a RFID tag order CSV file and splits out various store orders into independent files.
+LISA, Label RFID Splitting Arrangement, is a program that takes a purchase order CSV file and separates out user defined store orders into independent files.
