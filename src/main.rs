@@ -18,6 +18,9 @@ struct Cli {
     /// The text file that contains all of the store numbers to be processed
     #[clap(short, long)]
     list: PathBuf,
+    /// Enter the store numbers manually. ie. 025,030,153
+    #[clap(short, long)]
+    stores: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
