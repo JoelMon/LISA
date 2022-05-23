@@ -18,6 +18,9 @@ struct Cli {
     /// The text file that contains all of the store numbers to be processed
     #[clap(short, long)]
     list: PathBuf,
+    /// Print all RFIDs
+    #[clap(short, long, conflicts_with("list"))]
+    print_all: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
