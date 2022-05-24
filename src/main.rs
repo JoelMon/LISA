@@ -8,11 +8,6 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
-#[clap(group(
-            ArgGroup::new("ios")
-                .required(true)
-                .args(&["list", "printall"]),
-        ))]
 struct Cli {
     /// The PO csv file to be used
     #[clap(short, long)]
@@ -21,10 +16,10 @@ struct Cli {
     #[clap(short, long)]
     output: PathBuf,
     /// The text file that contains all of the store numbers to be processed
-    #[clap(short, long, group = "io")]
+    #[clap(short, long)]
     list: PathBuf,
-    /// Print all RFIDs
-    #[clap(short, long, group = "io")]
+    /// Print all RFIDs including items marked with a '$'
+    #[clap(short = 'a', long = "print-all")]
     printall: bool,
 }
 
@@ -122,7 +117,11 @@ fn list(path: PathBuf) -> Vec<String> {
     file
 }
 
-fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<()> {
+fn write_file(
+    records: Vec<StringRecord>,
+    destination_path: PathBuf,
+    print_all: bool,
+) -> Result<()> {
     // By using a HashSet, we remove all duplicated records from the vector.
     // We aquire a set of unique POs that we can use as file names below.
     let store_list = records
@@ -143,32 +142,32 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
         let file_name = dbg!(file_path.join(format!("{}.csv", &store)));
         let mut wtr = csv::Writer::from_writer(File::create(file_name)?);
 
-        for each in records.iter() {
+        for item in records.iter() {
             // If an item contains a `$` in the name description, then the qty should be set to `0`.
             // See comments for `has_rfid()`.
-            if has_rfid(each) && each.get(0).unwrap().to_owned() == store {
+            if has_rfid(item) && !print_all && item.get(0).unwrap().to_owned() == store {
                 wtr.serialize(Order {
-                    po: each.get(0).unwrap().to_owned(),
-                    style_code: each.get(1).unwrap().to_owned(),
-                    color_code: each.get(2).unwrap().to_owned(),
-                    msrp_size: each.get(3).unwrap().to_owned(),
-                    style_desc: each.get(4).unwrap().to_owned(),
-                    color_desc: each.get(5).unwrap().to_owned(),
-                    upc: each.get(6).unwrap().to_owned(),
+                    po: item.get(0).unwrap().to_owned(),
+                    style_code: item.get(1).unwrap().to_owned(),
+                    color_code: item.get(2).unwrap().to_owned(),
+                    msrp_size: item.get(3).unwrap().to_owned(),
+                    style_desc: item.get(4).unwrap().to_owned(),
+                    color_desc: item.get(5).unwrap().to_owned(),
+                    upc: item.get(6).unwrap().to_owned(),
                     store_num: "".to_owned(), // This field must always be an empty string
                     qty: "0".to_owned(),      // If it `has_rfid` is `true` then set qty to 0
                 })?;
-            } else if each.get(0).unwrap().to_owned() == store {
+            } else if item.get(0).unwrap().to_owned() == store {
                 wtr.serialize(Order {
-                    po: each.get(0).unwrap().to_owned(),
-                    style_code: each.get(1).unwrap().to_owned(),
-                    color_code: each.get(2).unwrap().to_owned(),
-                    msrp_size: each.get(3).unwrap().to_owned(),
-                    style_desc: each.get(4).unwrap().to_owned(),
-                    color_desc: each.get(5).unwrap().to_owned(),
-                    upc: each.get(6).unwrap().to_owned(),
+                    po: item.get(0).unwrap().to_owned(),
+                    style_code: item.get(1).unwrap().to_owned(),
+                    color_code: item.get(2).unwrap().to_owned(),
+                    msrp_size: item.get(3).unwrap().to_owned(),
+                    style_desc: item.get(4).unwrap().to_owned(),
+                    color_desc: item.get(5).unwrap().to_owned(),
+                    upc: item.get(6).unwrap().to_owned(),
                     store_num: "".to_owned(), // This field must always be an empty string
-                    qty: each.get(8).unwrap().to_owned(),
+                    qty: item.get(8).unwrap().to_owned(),
                 })?;
             }
         }
@@ -181,11 +180,12 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
 fn main() -> Result<()> {
     let args = Cli::parse();
 
-    let flag = args.printall;
+    // Default behavior is not to print items that contain a '$' at the end of the line
+    let print_all = args.printall;
 
     let store_list: Vec<String> = list(args.list);
     let results = read_file(args.input)?;
     let results = filter_store(results, store_list)?;
-    write_file(results, args.output)?;
+    write_file(results, args.output, print_all)?;
     Ok(())
 }
