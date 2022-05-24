@@ -1,5 +1,5 @@
 use anyhow::{Context, Ok, Result};
-use clap::Parser;
+use clap::{ArgEnum, Args, Parser};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -10,17 +10,36 @@ use std::path::PathBuf;
 #[clap(author, version, about, long_about=None)]
 struct Cli {
     /// The PO csv file to be used
-    #[clap(short, long)]
+    #[clap(short, long, required = true)]
     input: PathBuf,
     /// The destination directory where the processed POs will be saved
-    #[clap(short, long)]
+    #[clap(short, long, required = true)]
     output: PathBuf,
     /// The text file that contains all of the store numbers to be processed
-    #[clap(short, long)]
+    #[clap(short, long, group = "io")]
     list: PathBuf,
     /// Print all RFIDs
-    #[clap(short, long, conflicts_with("list"))]
+    #[clap(short, long, group = "io")]
     print_all: bool,
+    #[clap(flatten)]
+    other: Other,
+    #[clap(short, long, arg_enum)]
+    stuff: Stuff,
+}
+
+#[derive(Debug, ArgEnum, Clone)]
+enum Stuff {
+    Aa,
+    Bb,
+}
+#[derive(Debug, Args)]
+struct Other {
+    /// FOO Option
+    #[clap(short, long, exclusive = true)]
+    foo: String,
+    /// Bar Option
+    #[clap(short, long, exclusive = true)]
+    bar: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
