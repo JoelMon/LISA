@@ -1,31 +1,31 @@
 use anyhow::{Context, Ok, Result};
-use clap::{ArgEnum, ArgGroup, Args, Parser};
+use clap::{ArgGroup, Parser};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::PathBuf;
 
-#[derive(Parser, Debug)]
-#[clap(author, version, about, long_about=None)]
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
 #[clap(group(
-            ArgGroup::new("inputs")
+            ArgGroup::new("ios")
                 .required(true)
-                .args(&["list", "print_all"]),
+                .args(&["list", "printall"]),
         ))]
 struct Cli {
     /// The PO csv file to be used
-    #[clap(short, long, required = true)]
+    #[clap(short, long)]
     input: PathBuf,
     /// The destination directory where the processed POs will be saved
-    #[clap(short, long, required = true)]
+    #[clap(short, long)]
     output: PathBuf,
     /// The text file that contains all of the store numbers to be processed
-    #[clap(short, long, group = "input")]
+    #[clap(short, long, group = "io")]
     list: PathBuf,
     /// Print all RFIDs
-    #[clap(short, long, group = "input")]
-    print_all: bool,
+    #[clap(short, long, group = "io")]
+    printall: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -180,6 +180,8 @@ fn write_file(records: Vec<StringRecord>, destination_path: PathBuf) -> Result<(
 
 fn main() -> Result<()> {
     let args = Cli::parse();
+
+    let flag = args.printall;
 
     let store_list: Vec<String> = list(args.list);
     let results = read_file(args.input)?;
