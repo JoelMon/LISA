@@ -1,5 +1,5 @@
 use anyhow::{Context, Ok, Result};
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 use csv::StringRecord;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -19,10 +19,10 @@ struct Cli {
     #[clap(short, long)]
     list: PathBuf,
     /// Print all RFIDs including items marked with a '$'
-    #[clap(short = 'a', long = "print-all")]
+    #[clap(short = 'a', long = "print-all", conflicts_with = "report")]
     printall: bool,
     /// Produce a report of selected PO
-    #[clap(short, long)]
+    #[clap(short, long, conflicts_with = "printall")]
     report: bool,
 }
 
@@ -183,16 +183,37 @@ fn write_file(
     Ok(())
 }
 
+// Produce a report of stores in a PO and the number of items
+fn report() -> Result<()> {
+    todo!()
+}
+
+fn produce_po_files(
+    list_path: PathBuf,
+    read_path: PathBuf,
+    output_path: PathBuf,
+    print_all: bool,
+) -> Result<()> {
+    let store_list: Vec<String> = list(list_path);
+    let results = read_file(read_path)?;
+    let results = filter_store(results, store_list)?;
+    write_file(results, output_path, print_all);
+    Ok(())
+}
 fn main() -> Result<()> {
     let args = Cli::parse();
 
     // Default behavior is not to print items that contain a '$' at the end of the line
+    let list_path = args.list;
+    let output_path = args.output;
+    let read_path = args.input;
     let print_all = args.printall;
     let is_report = args.report;
 
-    let store_list: Vec<String> = list(args.list);
-    let results = read_file(args.input)?;
-    let results = filter_store(results, store_list)?;
-    write_file(results, args.output, print_all)?;
+    match is_report {
+        true => println!("REPORT!"),
+        false => produce_po_files(list_path, read_path, output_path, print_all)?,
+    }
+
     Ok(())
 }
