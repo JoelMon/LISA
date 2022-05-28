@@ -10,13 +10,13 @@ use std::path::PathBuf;
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     /// The PO csv file to be used
-    #[clap(short, long)]
+    #[clap(short, long, parse(from_os_str))]
     input: PathBuf,
     /// The destination directory where the processed POs will be saved
-    #[clap(short, long)]
+    #[clap(short, long, parse(from_os_str))]
     output: PathBuf,
     /// The text file that contains all of the store numbers to be processed
-    #[clap(short, long)]
+    #[clap(short, long, parse(from_os_str))]
     list: PathBuf,
     /// Print all RFIDs including items marked with a '$'
     #[clap(short = 'a', long = "print-all", conflicts_with = "report")]
