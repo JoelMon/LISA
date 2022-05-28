@@ -184,7 +184,11 @@ fn write_file(
 }
 
 // Produce a report of stores in a PO and the number of items
-fn report() -> Result<()> {
+fn report(list_path: PathBuf, read_path: PathBuf, output_path: PathBuf) -> Result<()> {
+    let store_list: Vec<String> = list(list_path);
+    let results = read_file(read_path)?;
+    let results = filter_store(results, store_list)?;
+
     todo!()
 }
 
