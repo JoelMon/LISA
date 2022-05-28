@@ -21,6 +21,9 @@ struct Cli {
     /// Print all RFIDs including items marked with a '$'
     #[clap(short = 'a', long = "print-all")]
     printall: bool,
+    /// Produce a report of selected PO
+    #[clap(short, long)]
+    report: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -123,7 +126,7 @@ fn write_file(
     print_all: bool,
 ) -> Result<()> {
     // By using a HashSet, we remove all duplicated records from the vector.
-    // We aquire a set of unique POs that we can use as file names below.
+    // We acquire a set of unique POs that we can use as file names below.
     let store_list = records
         .iter()
         .map(|num| num.get(0).unwrap().to_owned())
@@ -185,6 +188,7 @@ fn main() -> Result<()> {
 
     // Default behavior is not to print items that contain a '$' at the end of the line
     let print_all = args.printall;
+    let is_report = args.report;
 
     let store_list: Vec<String> = list(args.list);
     let results = read_file(args.input)?;
