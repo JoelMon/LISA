@@ -139,7 +139,10 @@ fn write_file(
     //      2) Create a find all matching POs in store_list and use it with `wtr.serialize()`
     //      3) Push it to a file
     for store in store_list {
-        let file_name = dbg!(file_path.join(format!("{}.csv", &store)));
+        let file_name = file_path.join(format!("{}.csv", &store));
+
+        println!("Saving file: {}", &file_name.to_string_lossy());
+
         let mut wtr = csv::Writer::from_writer(File::create(file_name)?);
 
         for item in records.iter() {
