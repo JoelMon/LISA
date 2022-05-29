@@ -1,0 +1,12 @@
+[package]
+description = "This application separates purchas orders from various stores found in a large csv file into individual csv files."
+authors = ["Joel Montes de Oca"]
+edition = "2021"
+name = "lisa"
+version = "1.2.1"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "3.1", features = ["derive"] }
+csv = "1"
+serde = { version = "1", features = ["derive"] }

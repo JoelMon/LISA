@@ -184,12 +184,89 @@ fn write_file(
 }
 
 // Produce a report of stores in a PO and the number of items
-fn report(list_path: PathBuf, read_path: PathBuf, output_path: PathBuf) -> Result<()> {
+fn produce_report(list_path: PathBuf, read_path: PathBuf, output_path: PathBuf) -> Result<()> {
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
 
-    todo!()
+    #[allow(dead_code)]
+    #[derive(Debug)]
+    struct Store {
+        store_number: String,
+        qty_high: u32,
+        qty_low: u32,
+    }
+
+    let mut stores: Vec<Store> = Vec::new();
+
+    for item in &results {
+        let po = item.get(0).unwrap().to_owned();
+        let qty: u32 = item.get(8).unwrap().parse()?;
+        let has_rfid: bool = has_rfid(&item);
+
+        let store = match has_rfid {
+            true => Store {
+                store_number: po,
+                qty_high: 0,
+                qty_low: qty,
+            },
+            false => Store {
+                store_number: po,
+                qty_high: qty,
+                qty_low: 0,
+            },
+        };
+
+        stores.push(store);
+    }
+
+    // By using a HashSet, we remove all duplicated records from the vector.
+    // We acquire a set of unique POs that we can use as file names below.
+    let store_list = results
+        .iter()
+        .map(|num| num.get(0).unwrap().to_owned())
+        .collect::<HashSet<String>>();
+
+    let mut t_high: u32 = 0;
+    let mut t_low: u32 = 0;
+
+    for item in store_list {
+        let mut high: u32 = 0;
+        let mut low: u32 = 0;
+
+        for store in &stores {
+            if store.store_number == item {
+                high = high + store.qty_high;
+                low = low + store.qty_low;
+            }
+        }
+
+        // Reports by store number
+        println!(
+            "Store {} - TOTAL: {}. WITH RFID: {} MAY HAVE RFID: {}. {} boxes.",
+            item,
+            high + low,
+            high,
+            low,
+            ((high as f32 + low as f32) / 60.0).ceil()
+        );
+
+        t_high = t_high + high;
+        t_low = t_low + low;
+    }
+
+    println!(
+        "\nTOTALS FOR THIS ORDER:
+        TOTAL LABELS: {}
+        NEEDS RFID PRINTED: {}
+        MAY NOT NEED RFID: {}
+        TOTAL BOXES: {}",
+        t_high + t_low,
+        t_high,
+        t_low,
+        ((t_high as f32 + t_low as f32) / 60.0).ceil()
+    );
+    Ok(())
 }
 
 fn produce_po_files(
@@ -201,9 +278,11 @@ fn produce_po_files(
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
-    write_file(results, output_path, print_all);
+    let reuslts = write_file(results, output_path, print_all);
+
     Ok(())
 }
+
 fn main() -> Result<()> {
     let args = Cli::parse();
 
@@ -215,7 +294,7 @@ fn main() -> Result<()> {
     let is_report = args.report;
 
     match is_report {
-        true => println!("REPORT!"),
+        true => produce_report(list_path, read_path, output_path)?,
         false => produce_po_files(list_path, read_path, output_path, print_all)?,
     }
 
