@@ -227,6 +227,7 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
 
     let mut t_high: u32 = 0;
     let mut t_low: u32 = 0;
+    let mut t_stores: u32 = 0;
 
     for item in store_list {
         let mut high: u32 = 0;
@@ -251,14 +252,17 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
 
         t_high = t_high + high;
         t_low = t_low + low;
+        t_stores = t_stores + 1;
     }
 
     println!(
         "\nTOTALS FOR THIS ORDER:
+        TOTAL STORES: {}
         TOTAL LABELS: {}
         NEEDS RFID PRINTED: {}
         MAY NOT NEED RFID: {}
         TOTAL BOXES: {}",
+        t_stores,
         t_high + t_low,
         t_high,
         t_low,
