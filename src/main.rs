@@ -22,12 +22,11 @@ struct Cli {
     #[clap(short = 'a', long = "print-all", conflicts_with = "report")]
     printall: bool,
     /// Produce a report of selected PO
-    #[clap(short, long, conflicts_with = "printall")]
+    #[clap(short, long, conflicts_with_all = &["printall"])]
     report: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-#[allow(unused)]
 #[serde(rename_all = "PascalCase")]
 struct Order {
     po: String,
@@ -184,12 +183,11 @@ fn write_file(
 }
 
 // Produce a report of stores in a PO and the number of items
-fn produce_report(list_path: PathBuf, read_path: PathBuf, output_path: PathBuf) -> Result<()> {
+fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
 
-    #[allow(dead_code)]
     #[derive(Debug)]
     struct Store {
         store_number: String,
@@ -278,7 +276,7 @@ fn produce_po_files(
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
-    let reuslts = write_file(results, output_path, print_all);
+    write_file(results, output_path, print_all);
 
     Ok(())
 }
@@ -294,7 +292,7 @@ fn main() -> Result<()> {
     let is_report = args.report;
 
     match is_report {
-        true => produce_report(list_path, read_path, output_path)?,
+        true => produce_report(list_path, read_path)?,
         false => produce_po_files(list_path, read_path, output_path, print_all)?,
     }
 
