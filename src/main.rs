@@ -22,7 +22,7 @@ struct Cli {
     #[clap(short = 'a', long = "print-all", conflicts_with = "report")]
     printall: bool,
     /// Produce a report of selected PO
-    #[clap(short, long, conflicts_with_all = &["printall", "output"])]
+    #[clap(short, long, conflicts_with_all = &["printall"])]
     report: bool,
 }
 
