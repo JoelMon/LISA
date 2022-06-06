@@ -303,13 +303,12 @@ fn run_app() -> Result<()> {
     Ok(())
 }
 
-
-fn main(){
+fn main() {
     std::process::exit(match run_app() {
-        Ok(_) => 0,
+        Result::Ok(_) => 0,
         Err(err) => {
             eprintln!("error: {err:?}");
-        1
-    }
+            1
+        }
     });
 }
