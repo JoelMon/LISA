@@ -285,7 +285,7 @@ fn produce_po_files(
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn run_app() -> Result<()> {
     let args = Cli::parse();
 
     // Default behavior is not to print items that contain a '$' at the end of the line
@@ -301,4 +301,15 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+
+fn main(){
+    std::process::exit(match run_app() {
+        Ok(_) => 0,
+        Err(err) => {
+            eprintln!("error: {err:?}");
+        1
+    }
+    });
 }
