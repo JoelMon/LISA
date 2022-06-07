@@ -280,9 +280,10 @@ fn produce_po_files(
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
-    write_file(results, output_path, print_all);
-
-    Ok(())
+    match write_file(results, output_path, print_all) {
+        Result::Ok(_) => Ok(()),
+        Err(e) => panic!("{}", e),
+    }
 }
 
 fn run_app() -> Result<()> {
