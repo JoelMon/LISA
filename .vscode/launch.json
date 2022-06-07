@@ -20,8 +20,8 @@
                 }
             },
             "args": [
-                "--output=examples/",
-                "--input=examples/RFID3.csv",
+                "--output=examples/test/",
+                "--input=examples/RFID4.csv",
                 "--list=examples/list.txt",
             ],
             "cwd": "${workspaceFolder}"
