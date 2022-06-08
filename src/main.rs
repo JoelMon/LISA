@@ -158,9 +158,9 @@ fn write_file(
     for store in store_list {
         let file_name = file_path.join(format!("{}.csv", &store));
 
-        println!("Saving file: {}", &file_name.to_string_lossy());
+        // println!("Saving file: {}", &file_name.to_string_lossy());
 
-        let mut wtr = csv::Writer::from_writer(File::create(file_name)?);
+        let mut wtr = csv::Writer::from_writer(File::create(&file_name)?);
 
         for item in records.iter() {
             debug!(
@@ -196,6 +196,7 @@ fn write_file(
                 })?;
             }
         }
+        debug!("File saved: {}", &file_name.to_str().unwrap());
         wtr.flush()?;
     }
 
