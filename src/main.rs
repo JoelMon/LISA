@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::PathBuf;
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -107,6 +110,8 @@ fn has_rfid(record: &StringRecord) -> bool {
 // TODO: Perhaps using a format such as TOML.
 // TODO: Also, write checks and tests to catch user errors when store numbers are added, such as one or two digits for a store number.
 fn list(path: PathBuf) -> Vec<String> {
+    info!("Entering list()");
+
     let file = std::fs::read_to_string(path)
         .expect("Could not read the file containing the stores to search for, check file")
         .lines()
@@ -116,6 +121,9 @@ fn list(path: PathBuf) -> Vec<String> {
         .split(",")
         .map(|x| x.to_owned())
         .collect::<Vec<String>>();
+
+    debug!("file: {:#?}", &file);
+    info!("Exiting list()");
     file
 }
 
@@ -124,6 +132,13 @@ fn write_file(
     destination_path: PathBuf,
     print_all: bool,
 ) -> Result<()> {
+    info!("Entering write_file");
+    debug!("`records` parameter: {:#?}", &records);
+    debug!("destination_path: {}", &destination_path.to_str().unwrap());
+    debug!("print_all: {}", &print_all);
+
+    // Create a list of stores.
+    //
     // By using a HashSet, we remove all duplicated records from the vector.
     // We acquire a set of unique POs that we can use as file names below.
     let store_list = records
@@ -148,6 +163,11 @@ fn write_file(
         let mut wtr = csv::Writer::from_writer(File::create(file_name)?);
 
         for item in records.iter() {
+            debug!(
+                "The item being worked on: {} with UPC: {}",
+                &item.get(0).unwrap().to_string(),
+                &item.get(6).unwrap().to_string(),
+            );
             // If an item contains a `$` in the name description, then the qty should be set to `0`.
             // See comments for `has_rfid()`.
             if has_rfid(item) && !print_all && item.get(0).unwrap().to_owned() == store {
@@ -277,16 +297,27 @@ fn produce_po_files(
     output_path: PathBuf,
     print_all: bool,
 ) -> Result<()> {
+    info!("Entering produce_po_files");
+    debug!("list_path: {}", &list_path.to_str().unwrap());
+    debug!("read_path: {}", &read_path.to_str().unwrap());
+    debug!("output_path: {}", &output_path.to_str().unwrap());
+    debug!("print_all: {}", &print_all);
+
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
     match write_file(results, output_path, print_all) {
-        Result::Ok(_) => Ok(()),
+        Result::Ok(_) => {
+            info!("write_file returned with Ok(), exciting produce_po_files");
+            Ok(())
+        }
         Err(e) => panic!("{}", e),
     }
 }
 
 fn run_app() -> Result<()> {
+    info!("[run_app] Entering run_app()");
+
     let args = Cli::parse();
 
     // Default behavior is not to print items that contain a '$' at the end of the line
@@ -295,6 +326,8 @@ fn run_app() -> Result<()> {
     let read_path = args.input;
     let print_all = args.printall;
     let is_report = args.report;
+
+    debug!("[run_app] is_report is set to: {}", &is_report);
 
     match is_report {
         true => produce_report(list_path, read_path)?,
@@ -305,6 +338,10 @@ fn run_app() -> Result<()> {
 }
 
 fn main() {
+    pretty_env_logger::init();
+
+    info!("[main] Initialling application");
+
     std::process::exit(match run_app() {
         Result::Ok(_) => 0,
         Err(err) => {
