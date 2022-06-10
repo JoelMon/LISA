@@ -3,7 +3,7 @@ authors = ["Joel Montes de Oca"]
 description = "This application separates purchas orders from various stores found in a large csv file into individual csv files."
 edition = "2021"
 name = "lisa"
-version = "1.4.2"
+version = "1.4.3"
 [dependencies]
 anyhow = "1.0"
 csv = "1"
