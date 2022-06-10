@@ -68,6 +68,7 @@ fn filter_store(records: Vec<StringRecord>, list: Vec<String>) -> Result<Vec<Str
     let mut filtered_records = vec![];
 
     for num in list {
+        let num = format!("-{}", &num);
         for item in records.clone().into_iter() {
             if item.get(0).unwrap().to_owned().contains(&num) {
                 filtered_records.push(item)
