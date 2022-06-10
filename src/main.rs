@@ -197,7 +197,6 @@ fn write_file(
                 })?;
             }
         }
-        debug!("File saved: {}", &file_name.to_str().unwrap());
         wtr.flush()?;
     }
 
@@ -206,6 +205,7 @@ fn write_file(
 
 // Produce a report of stores in a PO and the number of items
 fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
+    info!("Entering produce_report()");
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
     let results = filter_store(results, store_list)?;
