@@ -7,8 +7,11 @@ version = "1.4.3"
 [dependencies]
 anyhow = "1.0"
 csv = "1"
+eframe = "0.18"
+egui = "0.18"
 log = "0.4"
 pretty_env_logger = "0.4"
+rfd = "0.8.4"
 
 [dependencies.clap]
 features = ["derive"]

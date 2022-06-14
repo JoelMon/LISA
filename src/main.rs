@@ -1,6 +1,7 @@
 use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use csv::StringRecord;
+use eframe::egui;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
@@ -27,6 +28,11 @@ struct Cli {
     /// Produce a report of selected PO
     #[clap(short, long, conflicts_with_all = &["printall"])]
     report: bool,
+
+    //  conflicts_with_all =&["input", "output", "list", "printall"]
+    /// Runs LISA in GUI mode
+    #[clap(long = "gui")]
+    gui: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -317,28 +323,49 @@ fn produce_po_files(
     }
 }
 
-fn run_app() -> Result<()> {
-    info!("[run_app] Entering run_app()");
-
-    let args = Cli::parse();
-
-    // Default behavior is not to print items that contain a '$' at the end of the line
-    let list_path = args.list;
-    let output_path = args.output;
-    let read_path = args.input;
-    let print_all = args.printall;
-    let is_report = args.report;
-
-    debug!("[run_app] is_report is set to: {}", &is_report);
-
-    match is_report {
-        true => produce_report(list_path, read_path)?,
-        false => produce_po_files(list_path, read_path, output_path, print_all)?,
-    }
-
-    Ok(())
+#[derive(Debug, Default)]
+struct Gui {
+    input: Option<PathBuf>,
+    output: Option<PathBuf>,
+    list: Option<PathBuf>,
 }
 
+impl eframe::App for Gui {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("L.I.S.A.");
+            let mut paths = Gui::default();
+
+            if ui.button("Input file...").clicked() {
+                if let path = rfd::FileDialog::new().pick_file() {
+                    paths.input = path;
+                    dbg!(paths);
+                }
+            }
+
+            if ui.button("Output file...").clicked() {
+                if let path = rfd::FileDialog::new().pick_file() {
+                    paths.output = path;
+                    dbg!(paths);
+                }
+            }
+            if ui.button("List file...").clicked() {
+                if let path = rfd::FileDialog::new().pick_file() {
+                    paths.list = path;
+                    dbg!(paths);
+                }
+            }
+        });
+    }
+}
+
+fn run_gui() {
+    let options = eframe::NativeOptions {
+        drag_and_drop_support: true,
+        ..Default::default()
+    };
+    eframe::run_native("LISA", options, Box::new(|_cc| Box::new(Gui::default())));
+}
 fn main() {
     pretty_env_logger::init();
 
@@ -351,4 +378,32 @@ fn main() {
             1
         }
     });
+}
+
+fn run_app() -> Result<()> {
+    info!("[run_app] Entering run_app()");
+
+    let args = Cli::parse();
+
+    // Default behavior is not to print items that contain a '$' at the end of the line
+    let list_path: PathBuf = args.list;
+    let output_path: PathBuf = args.output;
+    let read_path: PathBuf = args.input;
+    let print_all: bool = args.printall;
+    let is_report: bool = args.report;
+    let is_gui: bool = args.gui;
+
+    debug!("[run_app] is_report is set to: {}", &is_report);
+    debug!("[run_app] is_gui is set to: {}", &is_gui);
+
+    if is_gui {
+        run_gui();
+    }
+
+    match is_report {
+        true => produce_report(list_path, read_path)?,
+        false => produce_po_files(list_path, read_path, output_path, print_all)?,
+    }
+
+    Ok(())
 }
