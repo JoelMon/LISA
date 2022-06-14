@@ -330,31 +330,44 @@ struct Gui {
     list: Option<PathBuf>,
 }
 
+impl Gui {
+    fn add_input(mut self, path: Option<PathBuf>) {
+        self.input = path;
+    }
+
+    fn add_output(mut self, path: Option<PathBuf>) {
+        self.output = path;
+    }
+
+    fn add_list(mut self, path: Option<PathBuf>) {
+        self.list = path;
+    }
+}
+
 impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("L.I.S.A.");
-            let mut paths = Gui::default();
+            let paths = Gui::default();
 
             if ui.button("Input file...").clicked() {
                 if let path = rfd::FileDialog::new().pick_file() {
-                    paths.input = path;
-                    dbg!(paths);
+                    paths.add_input(path);
                 }
             }
 
             if ui.button("Output file...").clicked() {
                 if let path = rfd::FileDialog::new().pick_file() {
-                    paths.output = path;
-                    dbg!(paths);
+                    paths.add_output(path);
                 }
             }
-            if ui.button("List file...").clicked() {
-                if let path = rfd::FileDialog::new().pick_file() {
-                    paths.list = path;
-                    dbg!(paths);
-                }
-            }
+
+            // if ui.button("List file...").clicked() {
+            //     if let path = rfd::FileDialog::new().pick_file() {
+            //         paths.list = path;
+            //         dbg!(paths);
+            //     }
+            // }
         });
     }
 }
