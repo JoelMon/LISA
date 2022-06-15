@@ -392,29 +392,61 @@ impl eframe::App for Gui {
             });
 
             if ui.button("Run").clicked() {
+                // msgbox handles the various message dialog boxes that might be needed.
+                fn msgbox(
+                    title: &str,
+                    body: &str,
+                    level: rfd::MessageLevel,
+                    buttons: rfd::MessageButtons,
+                ) {
+                    let msgbox = rfd::MessageDialog::new()
+                        .set_title(title)
+                        .set_description(body)
+                        .set_level(level)
+                        .set_buttons(buttons)
+                        .show();
+                }
+
                 let read_path = match Gui::get_path(self, PathKind::Input) {
                     Some(path) => path.to_owned(),
-                    None => panic!("Input was empty"),
+                    None => {
+                        let msgbox_error = rfd::MessageDialog::new()
+                            .set_title("Error")
+                            .set_description("Error: Input field can not be empty.")
+                            .set_buttons(rfd::MessageButtons::Ok)
+                            .set_level(rfd::MessageLevel::Info)
+                            .show();
+                        panic!("Input field can not be empty.");
+                    }
                 };
+
                 let output_path = match Gui::get_path(self, PathKind::Output) {
                     Some(path) => path.to_owned(),
-                    None => panic!("Output was empty"),
+                    None => {
+                        let msgbox_error = rfd::MessageDialog::new()
+                            .set_title("Error")
+                            .set_description("Error: Output field can not be empty.")
+                            .set_buttons(rfd::MessageButtons::Ok)
+                            .set_level(rfd::MessageLevel::Info)
+                            .show();
+                        panic!("Output can not be empty.");
+                    }
                 };
                 let list_path = match Gui::get_path(self, PathKind::List) {
                     Some(path) => path.to_owned(),
-                    None => panic!("List was empty"),
+                    None => {
+                        let msgbox_error = rfd::MessageDialog::new()
+                            .set_title("Error")
+                            .set_description("Error: Input field can not be empty.")
+                            .set_buttons(rfd::MessageButtons::Ok)
+                            .set_level(rfd::MessageLevel::Info)
+                            .show();
+                        panic!("List was empty");
+                    }
                 };
+
                 let print_all = false;
-
                 let results = produce_po_files(list_path, read_path, output_path, print_all);
-
-                let msgbox = rfd::MessageDialog::new();
-                msgbox
-                    .set_title("Done Running")
-                    .set_description("Lisa ran sucessfully.")
-                    .set_buttons(rfd::MessageButtons::Ok)
-                    .set_level(rfd::MessageLevel::Info)
-                    .show();
             }
         });
     }
