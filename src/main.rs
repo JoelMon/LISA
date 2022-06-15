@@ -10,31 +10,6 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-#[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
-struct Cli {
-    /// The PO csv file to be used
-    #[clap(short, long, parse(from_os_str))]
-    input: PathBuf,
-    /// The destination directory where the processed POs will be saved
-    #[clap(short, long, parse(from_os_str))]
-    output: PathBuf,
-    /// The text file that contains all of the store numbers to be processed
-    #[clap(short, long, parse(from_os_str))]
-    list: PathBuf,
-    /// Print all RFIDs including items marked with a '$'
-    #[clap(short = 'a', long = "print-all", conflicts_with = "report")]
-    printall: bool,
-    /// Produce a report of selected PO
-    #[clap(short, long, conflicts_with_all = &["printall"])]
-    report: bool,
-
-    //  conflicts_with_all =&["input", "output", "list", "printall"]
-    /// Runs LISA in GUI mode
-    #[clap(long = "gui")]
-    gui: bool,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct Order {
@@ -367,37 +342,79 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // let mut paths = Gui::default();
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("L.I.S.A.");
+            ui.heading("Files");
 
-            if ui.button("Input file...").clicked() {
-                let path = rfd::FileDialog::new()
-                    .add_filter("csv", &["csv", "txt"])
-                    .set_title("Select PO as input")
-                    .pick_file();
+            ui.horizontal(|ui| {
+                if ui.button("Input").clicked() {
+                    let path = rfd::FileDialog::new()
+                        .add_filter("csv", &["csv", "txt"])
+                        .set_title("Select input file...")
+                        .pick_file();
 
-                Gui::put_path(self, path, PathKind::Input);
-            }
+                    Gui::put_path(self, path, PathKind::Input);
+                }
+                let path = match Gui::get_path(self, PathKind::Input) {
+                    Some(path) => path.to_str().unwrap(),
+                    None => "Select a PO file.",
+                };
+                ui.label(path);
+            });
 
-            if ui.button("Output file...").clicked() {
-                let path = rfd::FileDialog::new()
-                    .set_title("Select where to save store files")
-                    .pick_folder();
+            ui.horizontal(|ui| {
+                if ui.button("Output").clicked() {
+                    let path = rfd::FileDialog::new()
+                        .set_title("Select where to save output...")
+                        .pick_folder();
 
-                Gui::put_path(self, path, PathKind::Output);
-            }
+                    Gui::put_path(self, path, PathKind::Output);
+                }
 
-            if ui.button("List file...").clicked() {
-                let path = rfd::FileDialog::new()
-                    .set_title("Select the list containing store numbers")
-                    .pick_file();
+                let path = match Gui::get_path(self, PathKind::Output) {
+                    Some(path) => path.to_str().unwrap(),
+                    None => "Select a destination.",
+                };
+                ui.label(path);
+            });
 
-                Gui::put_path(self, path, PathKind::List);
-            }
+            ui.horizontal(|ui| {
+                if ui.button("List").clicked() {
+                    let path = rfd::FileDialog::new()
+                        .set_title("Select list of stores...")
+                        .pick_file();
 
-            if ui.button("Print Input Path").clicked() {
-                dbg!(Gui::get_path(self, PathKind::Input));
-                dbg!(Gui::get_path(self, PathKind::Output));
-                dbg!(Gui::get_path(self, PathKind::List));
+                    Gui::put_path(self, path, PathKind::List);
+                }
+                let path = match Gui::get_path(self, PathKind::List) {
+                    Some(path) => path.to_str().unwrap(),
+                    None => "Select list of stores",
+                };
+                ui.label(path);
+            });
+
+            if ui.button("Run").clicked() {
+                let read_path = match Gui::get_path(self, PathKind::Input) {
+                    Some(path) => path.to_owned(),
+                    None => panic!("Input was empty"),
+                };
+                let output_path = match Gui::get_path(self, PathKind::Output) {
+                    Some(path) => path.to_owned(),
+                    None => panic!("Output was empty"),
+                };
+                let list_path = match Gui::get_path(self, PathKind::List) {
+                    Some(path) => path.to_owned(),
+                    None => panic!("List was empty"),
+                };
+                let print_all = false;
+
+                let results = produce_po_files(list_path, read_path, output_path, print_all);
+
+                let msgbox = rfd::MessageDialog::new();
+                msgbox
+                    .set_title("Done Running")
+                    .set_description("Lisa ran sucessfully.")
+                    .set_buttons(rfd::MessageButtons::Ok)
+                    .set_level(rfd::MessageLevel::Info)
+                    .show();
             }
         });
     }
@@ -424,9 +441,30 @@ fn main() {
     });
 }
 
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// The PO csv file to be used
+    #[clap(short, long, parse(from_os_str), required = false)]
+    input: PathBuf,
+    /// The destination directory where the processed POs will be saved
+    #[clap(short, long, parse(from_os_str), required = false)]
+    output: PathBuf,
+    /// The text file that contains all of the store numbers to be processed
+    #[clap(short, long, parse(from_os_str), required = false)]
+    list: PathBuf,
+    /// Print all RFIDs including items marked with a '$'
+    #[clap(short = 'a', long = "print-all")]
+    printall: bool,
+    /// Produce a report of selected PO
+    #[clap(short, long, conflicts_with_all = &["printall"])]
+    report: bool,
+    /// Runs LISA in GUI mode
+    #[clap(long = "gui")]
+    gui: bool,
+}
 fn run_app() -> Result<()> {
     info!("[run_app] Entering run_app()");
-
     let args = Cli::parse();
 
     // Default behavior is not to print items that contain a '$' at the end of the line
