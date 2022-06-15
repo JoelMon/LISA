@@ -330,44 +330,75 @@ struct Gui {
     list: Option<PathBuf>,
 }
 
+enum PathKind {
+    Input,
+    Output,
+    List,
+}
+
 impl Gui {
-    fn add_input(mut self, path: Option<PathBuf>) {
-        self.input = path;
+    fn put_path(&mut self, path: Option<PathBuf>, kind: PathKind) -> &mut Gui {
+        match kind {
+            PathKind::Input => {
+                self.input = path;
+                self
+            }
+            PathKind::Output => {
+                self.output = path;
+                self
+            }
+            PathKind::List => {
+                self.list = path;
+                self
+            }
+        }
     }
 
-    fn add_output(mut self, path: Option<PathBuf>) {
-        self.output = path;
-    }
-
-    fn add_list(mut self, path: Option<PathBuf>) {
-        self.list = path;
+    fn get_path(&mut self, kind: PathKind) -> Option<&PathBuf> {
+        match kind {
+            PathKind::Input => self.input.as_ref(),
+            PathKind::Output => self.output.as_ref(),
+            PathKind::List => self.list.as_ref(),
+        }
     }
 }
 
 impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        // let mut paths = Gui::default();
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("L.I.S.A.");
-            let paths = Gui::default();
 
             if ui.button("Input file...").clicked() {
-                if let path = rfd::FileDialog::new().pick_file() {
-                    paths.add_input(path);
-                }
+                let path = rfd::FileDialog::new()
+                    .add_filter("csv", &["csv", "txt"])
+                    .set_title("Select PO as input")
+                    .pick_file();
+
+                Gui::put_path(self, path, PathKind::Input);
             }
 
             if ui.button("Output file...").clicked() {
-                if let path = rfd::FileDialog::new().pick_file() {
-                    paths.add_output(path);
-                }
+                let path = rfd::FileDialog::new()
+                    .set_title("Select where to save store files")
+                    .pick_folder();
+
+                Gui::put_path(self, path, PathKind::Output);
             }
 
-            // if ui.button("List file...").clicked() {
-            //     if let path = rfd::FileDialog::new().pick_file() {
-            //         paths.list = path;
-            //         dbg!(paths);
-            //     }
-            // }
+            if ui.button("List file...").clicked() {
+                let path = rfd::FileDialog::new()
+                    .set_title("Select the list containing store numbers")
+                    .pick_file();
+
+                Gui::put_path(self, path, PathKind::List);
+            }
+
+            if ui.button("Print Input Path").clicked() {
+                dbg!(Gui::get_path(self, PathKind::Input));
+                dbg!(Gui::get_path(self, PathKind::Output));
+                dbg!(Gui::get_path(self, PathKind::List));
+            }
         });
     }
 }
