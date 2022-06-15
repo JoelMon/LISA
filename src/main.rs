@@ -339,6 +339,7 @@ impl Gui {
 }
 
 impl eframe::App for Gui {
+    // TODO: Major need for refactoring. Move logic out of GUI code.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // let mut paths = Gui::default();
         egui::CentralPanel::default().show(ctx, |ui| {
