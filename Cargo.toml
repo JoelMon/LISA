@@ -6,6 +6,7 @@ name = "lisa"
 version = "1.5.1-alpha"
 readme = "README.md"
 repository = "https://github.com/JoelMon/lisa/"
+publish = false
 
 [[bin]]
 name = "lisa"
