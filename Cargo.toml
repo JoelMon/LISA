@@ -4,6 +4,8 @@ description = "This application separates purchas orders from various stores fou
 edition = "2021"
 name = "lisa"
 version = "1.5.1-alpha"
+readme = "README.md"
+repository = "https://github.com/JoelMon/lisa/"
 
 [[bin]]
 name = "lisa"
