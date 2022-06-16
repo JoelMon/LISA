@@ -364,6 +364,7 @@ impl eframe::App for Gui {
                         ui.heading("Process PO Files");
                     });
                     egui::ScrollArea::vertical().show(ui, |ui| {
+                        // Layout holding the Input button and text field
                         ui.horizontal(|ui| {
                             if ui.button("Input").clicked() {
                                 let path = rfd::FileDialog::new()
@@ -380,6 +381,7 @@ impl eframe::App for Gui {
                             ui.label(path);
                         });
 
+                        // Layout holding the Output button and text field
                         ui.horizontal(|ui| {
                             if ui.button("Output").clicked() {
                                 let path = rfd::FileDialog::new()
@@ -396,6 +398,7 @@ impl eframe::App for Gui {
                             ui.label(path);
                         });
 
+                        // Layout holding the List button and text field
                         ui.horizontal(|ui| {
                             if ui.button("List").clicked() {
                                 let path = rfd::FileDialog::new()
@@ -446,6 +449,45 @@ impl eframe::App for Gui {
                                 let _results =
                                     produce_po_files(list_path, read_path, output_path, print_all)
                                         .context("Something went wrong while 'produce_po_files()'");
+                            }
+                        });
+
+                        ui.vertical_centered(|ui| ui.heading("Reports"));
+                        // Layout holding the Input button and text field for Reports
+                        ui.horizontal(|ui| {
+                            if ui.button("Input").clicked() {
+                                let path = rfd::FileDialog::new()
+                                    .add_filter("csv", &["csv", "txt"])
+                                    .set_title("Select input file...")
+                                    .pick_file();
+
+                                Gui::put_path(self, path, PathKind::Input);
+                            }
+                            let path = match Gui::get_path(self, PathKind::Input) {
+                                Some(path) => path.to_str().unwrap(),
+                                None => "Select a PO file.",
+                            };
+                            ui.label(path);
+                        });
+                        // Layout holding the Input button and text fields for Reports
+                        ui.horizontal(|ui| {
+                            if ui.button("List").clicked() {
+                                let path = rfd::FileDialog::new()
+                                    .set_title("Select list of stores...")
+                                    .pick_file();
+
+                                Gui::put_path(self, path, PathKind::List);
+                            }
+                            let path = match Gui::get_path(self, PathKind::List) {
+                                Some(path) => path.to_str().unwrap(),
+                                None => "Select list of stores",
+                            };
+                            ui.label(path);
+                        });
+
+                        ui.vertical_centered(|ui| {
+                            if ui.button("Run Reports").clicked() {
+                                println!("Reports work.")
                             }
                         });
                     })
