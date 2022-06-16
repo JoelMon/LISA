@@ -440,7 +440,7 @@ fn run_gui() {
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     /// The PO csv file to be used
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(short, long, parse(from_os_str), required_unless_present = "gui")]
     input: PathBuf,
     /// The destination directory where the processed POs will be saved
     #[clap(short, long, parse(from_os_str))]

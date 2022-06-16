@@ -4,28 +4,24 @@ description = "This application separates purchas orders from various stores fou
 edition = "2021"
 name = "lisa"
 version = "1.5.0-alpha"
+[[bin]]
+name = "lisa"
+path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0"
-csv = "1"
-eframe = "0.18"
-egui = "0.18"
-log = "0.4"
-pretty_env_logger = "0.4"
+anyhow = "1.0.57"
+clap = { version = "3.2.5", features = ["derive"] }
+csv = "1.1.6"
+eframe = "0.18.0"
+egui = "0.18.1"
+log = "0.4.17"
+pretty_env_logger = "0.4.0"
 rfd = "0.9.0"
-
-[dependencies.clap]
-features = ["derive"]
-version = "3.2"
 
 [dependencies.serde]
 features = ["derive"]
-version = "1"
+version = "1.0.137"
 
 [lib]
 name = "lisa"
 path = "src/lib.rs"
-
-[[bin]]
-name = "lisa"
-path = "src/main.rs"
