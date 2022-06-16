@@ -354,6 +354,7 @@ impl eframe::App for Gui {
                 global_dark_light_mode_switch(ui);
             });
 
+            // The side panel within the main window.
             egui::SidePanel::left("right_panel")
                 .resizable(true)
                 .default_width(150.0)
@@ -410,35 +411,43 @@ impl eframe::App for Gui {
                             ui.label(path);
                         });
 
-                        if ui.button("Run").clicked() {
-                            let read_path = match Gui::get_path(self, PathKind::Input) {
-                                Some(path) => path.to_owned(),
-                                None => {
-                                    lisa::message_box::empty_field(ErrorMsgBox::EmptyInputField);
-                                    panic!("Input field can not be empty."); // TODO: Replace with proper error handling.
-                                }
-                            };
+                        ui.vertical_centered(|ui| {
+                            if ui.button("Run").clicked() {
+                                let read_path = match Gui::get_path(self, PathKind::Input) {
+                                    Some(path) => path.to_owned(),
+                                    None => {
+                                        lisa::message_box::empty_field(
+                                            ErrorMsgBox::EmptyInputField,
+                                        );
+                                        panic!("Input field can not be empty.");
+                                        // TODO: Replace with proper error handling.
+                                    }
+                                };
 
-                            let output_path = match Gui::get_path(self, PathKind::Output) {
-                                Some(path) => path.to_owned(),
-                                None => {
-                                    lisa::message_box::empty_field(ErrorMsgBox::EmptyOutputField);
-                                    panic!("Output field can not be empty."); // TODO: Replace with proper error handling.
-                                }
-                            };
-                            let list_path = match Gui::get_path(self, PathKind::List) {
-                                Some(path) => path.to_owned(),
-                                None => {
-                                    lisa::message_box::empty_field(ErrorMsgBox::EmptyListField);
-                                    panic!("List field can not be empty."); // TODO: Replace with proper error handling.
-                                }
-                            };
+                                let output_path = match Gui::get_path(self, PathKind::Output) {
+                                    Some(path) => path.to_owned(),
+                                    None => {
+                                        lisa::message_box::empty_field(
+                                            ErrorMsgBox::EmptyOutputField,
+                                        );
+                                        panic!("Output field can not be empty.");
+                                        // TODO: Replace with proper error handling.
+                                    }
+                                };
+                                let list_path = match Gui::get_path(self, PathKind::List) {
+                                    Some(path) => path.to_owned(),
+                                    None => {
+                                        lisa::message_box::empty_field(ErrorMsgBox::EmptyListField);
+                                        panic!("List field can not be empty."); // TODO: Replace with proper error handling.
+                                    }
+                                };
 
-                            let print_all = false;
-                            let _results =
-                                produce_po_files(list_path, read_path, output_path, print_all)
-                                    .context("Something went wrong while 'produce_po_files()'");
-                        }
+                                let print_all = false;
+                                let _results =
+                                    produce_po_files(list_path, read_path, output_path, print_all)
+                                        .context("Something went wrong while 'produce_po_files()'");
+                            }
+                        });
                     })
                 });
         });
