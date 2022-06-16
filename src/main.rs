@@ -2,15 +2,18 @@ use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use csv::StringRecord;
 use eframe::egui;
+use egui::{global_dark_light_mode_buttons, global_dark_light_mode_switch};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::PathBuf;
+use std::str::SplitWhitespace;
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 use lisa::message_box::ErrorMsgBox;
-
+mod windows;
+use windows::popup;
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct Order {
@@ -346,7 +349,10 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // let mut paths = Gui::default();
         egui::CentralPanel::default().show(ctx, |ui| {
-            // ui.heading("Files");
+            // Top Menu Bar
+            egui::menu::bar(ui, |ui| {
+                global_dark_light_mode_switch(ui);
+            });
 
             egui::SidePanel::left("right_panel")
                 .resizable(true)
@@ -354,89 +360,87 @@ impl eframe::App for Gui {
                 .width_range(80.0..=200.0)
                 .show_inside(ui, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.heading("Right Panel");
+                        ui.heading("Process PO Files");
                     });
-                    egui::ScrollArea::vertical().show(ui, |ui| ui.label("text"));
-                });
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui.button("Input").clicked() {
+                                let path = rfd::FileDialog::new()
+                                    .add_filter("csv", &["csv", "txt"])
+                                    .set_title("Select input file...")
+                                    .pick_file();
 
-            egui::Window::new("Process POs").show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    if ui.button("Input").clicked() {
-                        let path = rfd::FileDialog::new()
-                            .add_filter("csv", &["csv", "txt"])
-                            .set_title("Select input file...")
-                            .pick_file();
+                                Gui::put_path(self, path, PathKind::Input);
+                            }
+                            let path = match Gui::get_path(self, PathKind::Input) {
+                                Some(path) => path.to_str().unwrap(),
+                                None => "Select a PO file.",
+                            };
+                            ui.label(path);
+                        });
 
-                        Gui::put_path(self, path, PathKind::Input);
-                    }
-                    let path = match Gui::get_path(self, PathKind::Input) {
-                        Some(path) => path.to_str().unwrap(),
-                        None => "Select a PO file.",
-                    };
-                    ui.label(path);
-                });
+                        ui.horizontal(|ui| {
+                            if ui.button("Output").clicked() {
+                                let path = rfd::FileDialog::new()
+                                    .set_title("Select where to save output...")
+                                    .pick_folder();
 
-                ui.horizontal(|ui| {
-                    if ui.button("Output").clicked() {
-                        let path = rfd::FileDialog::new()
-                            .set_title("Select where to save output...")
-                            .pick_folder();
+                                Gui::put_path(self, path, PathKind::Output);
+                            }
 
-                        Gui::put_path(self, path, PathKind::Output);
-                    }
+                            let path = match Gui::get_path(self, PathKind::Output) {
+                                Some(path) => path.to_str().unwrap(),
+                                None => "Select a destination.",
+                            };
+                            ui.label(path);
+                        });
 
-                    let path = match Gui::get_path(self, PathKind::Output) {
-                        Some(path) => path.to_str().unwrap(),
-                        None => "Select a destination.",
-                    };
-                    ui.label(path);
-                });
+                        ui.horizontal(|ui| {
+                            if ui.button("List").clicked() {
+                                let path = rfd::FileDialog::new()
+                                    .set_title("Select list of stores...")
+                                    .pick_file();
 
-                ui.horizontal(|ui| {
-                    if ui.button("List").clicked() {
-                        let path = rfd::FileDialog::new()
-                            .set_title("Select list of stores...")
-                            .pick_file();
+                                Gui::put_path(self, path, PathKind::List);
+                            }
+                            let path = match Gui::get_path(self, PathKind::List) {
+                                Some(path) => path.to_str().unwrap(),
+                                None => "Select list of stores",
+                            };
+                            ui.label(path);
+                        });
 
-                        Gui::put_path(self, path, PathKind::List);
-                    }
-                    let path = match Gui::get_path(self, PathKind::List) {
-                        Some(path) => path.to_str().unwrap(),
-                        None => "Select list of stores",
-                    };
-                    ui.label(path);
-                });
+                        if ui.button("Run").clicked() {
+                            let read_path = match Gui::get_path(self, PathKind::Input) {
+                                Some(path) => path.to_owned(),
+                                None => {
+                                    lisa::message_box::empty_field(ErrorMsgBox::EmptyInputField);
+                                    panic!("Input field can not be empty."); // TODO: Replace with proper error handling.
+                                }
+                            };
 
-                if ui.button("Run").clicked() {
-                    let read_path = match Gui::get_path(self, PathKind::Input) {
-                        Some(path) => path.to_owned(),
-                        None => {
-                            lisa::message_box::empty_field(ErrorMsgBox::EmptyInputField);
-                            panic!("Input field can not be empty."); // TODO: Replace with proper error handling.
+                            let output_path = match Gui::get_path(self, PathKind::Output) {
+                                Some(path) => path.to_owned(),
+                                None => {
+                                    lisa::message_box::empty_field(ErrorMsgBox::EmptyOutputField);
+                                    panic!("Output field can not be empty."); // TODO: Replace with proper error handling.
+                                }
+                            };
+                            let list_path = match Gui::get_path(self, PathKind::List) {
+                                Some(path) => path.to_owned(),
+                                None => {
+                                    lisa::message_box::empty_field(ErrorMsgBox::EmptyListField);
+                                    panic!("List field can not be empty."); // TODO: Replace with proper error handling.
+                                }
+                            };
+
+                            let print_all = false;
+                            let _results =
+                                produce_po_files(list_path, read_path, output_path, print_all)
+                                    .context("Something went wrong while 'produce_po_files()'");
                         }
-                    };
-
-                    let output_path = match Gui::get_path(self, PathKind::Output) {
-                        Some(path) => path.to_owned(),
-                        None => {
-                            lisa::message_box::empty_field(ErrorMsgBox::EmptyOutputField);
-                            panic!("Output field can not be empty."); // TODO: Replace with proper error handling.
-                        }
-                    };
-                    let list_path = match Gui::get_path(self, PathKind::List) {
-                        Some(path) => path.to_owned(),
-                        None => {
-                            lisa::message_box::empty_field(ErrorMsgBox::EmptyListField);
-                            panic!("List field can not be empty."); // TODO: Replace with proper error handling.
-                        }
-                    };
-
-                    let print_all = false;
-                    let _results: Result<(), anyhow::Error> =
-                        produce_po_files(list_path, read_path, output_path, print_all)
-                            .context("Something went wrong while 'produce_po_files()'");
-                }
-            });
+                    })
+                });
         });
     }
 }
