@@ -440,13 +440,13 @@ fn run_gui() {
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     /// The PO csv file to be used
-    #[clap(short, long, parse(from_os_str), required = false)]
+    #[clap(short, long, parse(from_os_str))]
     input: PathBuf,
     /// The destination directory where the processed POs will be saved
-    #[clap(short, long, parse(from_os_str), required = false)]
+    #[clap(short, long, parse(from_os_str))]
     output: PathBuf,
     /// The text file that contains all of the store numbers to be processed
-    #[clap(short, long, parse(from_os_str), required = false)]
+    #[clap(short, long, parse(from_os_str))]
     list: PathBuf,
     /// Print all RFIDs including items marked with a '$'
     #[clap(short = 'a', long = "print-all")]
@@ -455,7 +455,7 @@ struct Cli {
     #[clap(short, long, conflicts_with_all = &["printall"])]
     report: bool,
     /// Runs LISA in GUI mode
-    #[clap(long = "gui")]
+    #[clap(long = "gui", exclusive = true)]
     gui: bool,
 }
 fn run_app() -> Result<()> {
