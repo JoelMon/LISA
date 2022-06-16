@@ -9,6 +9,7 @@ use std::path::PathBuf;
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
+use lisa::message_box::ErrorMsgBox;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -95,7 +96,9 @@ fn list(path: PathBuf) -> Vec<String> {
     info!("Entering list()");
 
     let file = std::fs::read_to_string(path)
-        .expect("Could not read the file containing the stores to search for, check file")
+        .expect(
+            "[ list() ] Could not read the file containing the stores to search for, check file",
+        )
         .lines()
         .collect::<String>();
 
@@ -340,7 +343,7 @@ impl Gui {
 
 impl eframe::App for Gui {
     // TODO: Major need for refactoring. Move logic out of GUI code.
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // let mut paths = Gui::default();
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Files");
@@ -393,61 +396,33 @@ impl eframe::App for Gui {
             });
 
             if ui.button("Run").clicked() {
-                // msgbox handles the various message dialog boxes that might be needed.
-                fn msgbox(
-                    title: &str,
-                    body: &str,
-                    level: rfd::MessageLevel,
-                    buttons: rfd::MessageButtons,
-                ) {
-                    let msgbox = rfd::MessageDialog::new()
-                        .set_title(title)
-                        .set_description(body)
-                        .set_level(level)
-                        .set_buttons(buttons)
-                        .show();
-                }
-
                 let read_path = match Gui::get_path(self, PathKind::Input) {
                     Some(path) => path.to_owned(),
                     None => {
-                        let msgbox_error = rfd::MessageDialog::new()
-                            .set_title("Error")
-                            .set_description("Error: Input field can not be empty.")
-                            .set_buttons(rfd::MessageButtons::Ok)
-                            .set_level(rfd::MessageLevel::Info)
-                            .show();
-                        panic!("Input field can not be empty.");
+                        lisa::message_box::empty_field(ErrorMsgBox::EmptyInputField);
+                        panic!("Input field can not be empty."); // TODO: Replace with proper error handling.
                     }
                 };
 
                 let output_path = match Gui::get_path(self, PathKind::Output) {
                     Some(path) => path.to_owned(),
                     None => {
-                        let msgbox_error = rfd::MessageDialog::new()
-                            .set_title("Error")
-                            .set_description("Error: Output field can not be empty.")
-                            .set_buttons(rfd::MessageButtons::Ok)
-                            .set_level(rfd::MessageLevel::Info)
-                            .show();
-                        panic!("Output can not be empty.");
+                        lisa::message_box::empty_field(ErrorMsgBox::EmptyOutputField);
+                        panic!("Output field can not be empty."); // TODO: Replace with proper error handling.
                     }
                 };
                 let list_path = match Gui::get_path(self, PathKind::List) {
                     Some(path) => path.to_owned(),
                     None => {
-                        let msgbox_error = rfd::MessageDialog::new()
-                            .set_title("Error")
-                            .set_description("Error: Input field can not be empty.")
-                            .set_buttons(rfd::MessageButtons::Ok)
-                            .set_level(rfd::MessageLevel::Info)
-                            .show();
-                        panic!("List was empty");
+                        lisa::message_box::empty_field(ErrorMsgBox::EmptyListField);
+                        panic!("List field can not be empty."); // TODO: Replace with proper error handling.
                     }
                 };
 
                 let print_all = false;
-                let results = produce_po_files(list_path, read_path, output_path, print_all);
+                let _results: Result<(), anyhow::Error> =
+                    produce_po_files(list_path, read_path, output_path, print_all)
+                        .context("Something went wrong while 'produce_po_files()'");
             }
         });
     }
@@ -459,19 +434,6 @@ fn run_gui() {
         ..Default::default()
     };
     eframe::run_native("LISA", options, Box::new(|_cc| Box::new(Gui::default())));
-}
-fn main() {
-    pretty_env_logger::init();
-
-    info!("[main] Initialling application");
-
-    std::process::exit(match run_app() {
-        Result::Ok(_) => 0,
-        Err(err) => {
-            eprintln!("error: {err:?}");
-            1
-        }
-    });
 }
 
 #[derive(Parser)]
@@ -521,4 +483,18 @@ fn run_app() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn main() {
+    pretty_env_logger::init();
+
+    info!("[main] Initialling application");
+
+    std::process::exit(match run_app() {
+        Result::Ok(_) => 0,
+        Err(err) => {
+            eprintln!("error: {err:?}");
+            1
+        }
+    });
 }
