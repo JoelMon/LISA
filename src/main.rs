@@ -206,7 +206,10 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
     }
 
     let mut stores: Vec<Store> = Vec::new();
-
+    // Populate the Vec<Store> with the quantities of items with RFID and items without RFID
+    // to later produce the calculations below.
+    // TODO: The Store struct is poorly named because the information being stored is for each line of the CSV, not a specific store:
+    // TODO:   Item, Line, PO are better options.
     for item in &results {
         let po = item.get(0).unwrap().to_owned();
         let qty: u32 = item.get(8).unwrap().parse()?;
