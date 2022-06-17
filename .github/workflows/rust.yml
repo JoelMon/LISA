@@ -20,6 +20,6 @@ jobs:
       run: sudo apt install -y libgdk3.0-cil-dev libatk3.0-cil
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
