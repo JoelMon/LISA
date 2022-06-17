@@ -238,34 +238,34 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
         .map(|num| num.get(0).unwrap().to_owned())
         .collect::<HashSet<String>>();
 
-    let mut t_high: u32 = 0;
-    let mut t_low: u32 = 0;
-    let mut t_stores: u32 = 0;
+    let mut total_with_rfid: u32 = 0;
+    let mut total_without_rfid: u32 = 0;
+    let mut total_stores: u32 = 0;
 
-    for item in store_list {
-        let mut high: u32 = 0;
-        let mut low: u32 = 0;
+    for store_number in store_list {
+        let mut with_rfid: u32 = 0;
+        let mut without_rfid: u32 = 0;
 
         for store in &stores {
-            if store.store_number == item {
-                high = high + store.qty_with_rfid;
-                low = low + store.qty_without_rfid;
+            if store.store_number == store_number {
+                with_rfid = with_rfid + store.qty_with_rfid;
+                without_rfid = without_rfid + store.qty_without_rfid;
             }
         }
 
         // Reports by store number
         println!(
             "Store {} - TOTAL: {}. WITH RFID: {} MAY HAVE RFID: {}. {} boxes.",
-            item,
-            high + low,
-            high,
-            low,
-            ((high as f32 + low as f32) / 60.0).ceil()
+            store_number,
+            with_rfid + without_rfid,
+            with_rfid,
+            without_rfid,
+            ((with_rfid as f32 + without_rfid as f32) / 60.0).ceil()
         );
 
-        t_high = t_high + high;
-        t_low = t_low + low;
-        t_stores = t_stores + 1;
+        total_with_rfid = total_with_rfid + with_rfid;
+        total_without_rfid = total_without_rfid + without_rfid;
+        total_stores = total_stores + 1; // The total of unique store number in the PO
     }
 
     println!(
@@ -275,11 +275,11 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
         NEEDS RFID PRINTED: {}
         MAY NOT NEED RFID: {}
         TOTAL BOXES: {}",
-        t_stores,
-        t_high + t_low,
-        t_high,
-        t_low,
-        ((t_high as f32 + t_low as f32) / 60.0).ceil()
+        total_stores,
+        total_with_rfid + total_without_rfid,
+        total_with_rfid,
+        total_without_rfid,
+        ((total_with_rfid as f32 + total_without_rfid as f32) / 60.0).ceil()
     );
     Ok(())
 }
