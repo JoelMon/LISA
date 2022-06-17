@@ -28,6 +28,7 @@ struct Order {
     qty: String,
 }
 
+// Returns a StringRecord, which is the type the CSV crate uses to represent a CSV file.
 fn read_file(file_path: PathBuf) -> Result<Vec<StringRecord>> {
     let file = File::open(file_path).context("Failed to open file")?;
     let mut rdr = csv::Reader::from_reader(file);
@@ -200,8 +201,8 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
     #[derive(Debug)]
     struct Store {
         store_number: String,
-        qty_high: u32,
-        qty_low: u32,
+        qty_with_rfid: u32,
+        qty_without_rfid: u32,
     }
 
     let mut stores: Vec<Store> = Vec::new();
@@ -214,13 +215,13 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
         let store = match has_rfid {
             true => Store {
                 store_number: po,
-                qty_high: 0,
-                qty_low: qty,
+                qty_with_rfid: 0,
+                qty_without_rfid: qty,
             },
             false => Store {
                 store_number: po,
-                qty_high: qty,
-                qty_low: 0,
+                qty_with_rfid: qty,
+                qty_without_rfid: 0,
             },
         };
 
@@ -244,8 +245,8 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
 
         for store in &stores {
             if store.store_number == item {
-                high = high + store.qty_high;
-                low = low + store.qty_low;
+                high = high + store.qty_with_rfid;
+                low = low + store.qty_without_rfid;
             }
         }
 
