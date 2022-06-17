@@ -13,7 +13,7 @@ extern crate pretty_env_logger;
 extern crate log;
 use lisa::message_box::ErrorMsgBox;
 mod windows;
-use windows::popup;
+use windows::report;
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct Order {
@@ -191,8 +191,16 @@ fn write_file(
     Ok(())
 }
 
+struct Report {
+    num_stores: String,
+    total_labels: String,
+    with_rfid: String,
+    without_rfid: String,
+    boxes: String,
+}
+
 // Produce a report of stores in a PO and the number of items
-fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
+fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<Report> {
     info!("Entering produce_report()");
     let store_list: Vec<String> = list(list_path);
     let results = read_file(read_path)?;
@@ -281,7 +289,15 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<()> {
         total_without_rfid,
         ((total_with_rfid as f32 + total_without_rfid as f32) / 60.0).ceil()
     );
-    Ok(())
+    Ok(Report {
+        num_stores: total_stores.to_string(),
+        total_labels: (total_with_rfid + total_without_rfid).to_string(),
+        with_rfid: total_with_rfid.to_string(),
+        without_rfid: total_without_rfid.to_string(),
+        boxes: ((total_with_rfid as f32 + total_without_rfid as f32) / 60.0)
+            .ceil()
+            .to_string(),
+    })
 }
 
 fn produce_po_files(
@@ -491,7 +507,8 @@ impl eframe::App for Gui {
 
                         ui.vertical_centered(|ui| {
                             if ui.button("Run Reports").clicked() {
-                                println!("Reports work.")
+                                println!("Reports work.");
+                                windows::report::report_win();
                             }
                         });
                     })
@@ -551,7 +568,11 @@ fn run_app() -> Result<()> {
     debug!("[run_app] is_gui is set to: {}", &is_gui);
 
     match is_report {
-        true => produce_report(list_path, read_path)?,
+        // TODO: Fix the `true` arm: produce_report() is returning a Report.
+        true => {
+            // produce_report(list_path, read_path)?
+            print!("is_report: True");
+        }
         false => produce_po_files(list_path, read_path, output_path, print_all)?,
     }
 
