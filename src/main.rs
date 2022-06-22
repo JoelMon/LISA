@@ -28,7 +28,35 @@ struct Order {
     qty: String,
 }
 
-// Returns a StringRecord, which is the type the CSV crate uses to represent a CSV file.
+/// Fields pertaining to the RFID CSV produced by the Infinity app.
+enum Field {
+    Po,
+    Style,
+    ColorCode,
+    Size,
+    StyleDesc,
+    ColorDesc,
+    Upc,
+    Qty,
+}
+
+impl Field {
+    /// Returns the index of a specific field
+    fn get(&self) -> usize {
+        match &self {
+            Field::Po => 0,
+            Field::Style => 1,
+            Field::ColorCode => 2,
+            Field::Size => 3,
+            Field::StyleDesc => 4,
+            Field::ColorDesc => 5,
+            Field::Upc => 6,
+            Field::Qty => 8,
+        }
+    }
+}
+
+/// Returns a StringRecord, which is the type the CSV crate uses to represent a CSV file.
 fn read_file(file_path: PathBuf) -> Result<Vec<StringRecord>> {
     let file = File::open(file_path).context("Failed to open file")?;
     let mut rdr = csv::Reader::from_reader(file);
@@ -41,22 +69,27 @@ fn read_file(file_path: PathBuf) -> Result<Vec<StringRecord>> {
     Ok(records)
 }
 
-// filter_store() returns a vector of items that are found in `list: Vec<String>`.
-//
-// The csv files received for purchase orders for direct to store includes orders made for a
-// variety of different stores. Each store is identified by a _store number_.
-// This function takes a list which is a list of store numbers we
-// are interested in and returns only the POs of the sores found in the list.
-//
-// The `list` is made by the end user. It is a text file that lists the store numbers
-// to be returned.
+/// filter_store() returns a vector of items that are found in `list: Vec<String>`.
+///
+/// The csv files received for purchase orders for direct to store includes orders made for a
+/// variety of different stores. Each store is identified by a _store number_.
+/// This function takes a list which is a list of store numbers we
+/// are interested in and returns only the POs of the sores found in the list.
+///
+/// The `list` is made by the end user. It is a text file that lists the store numbers
+/// to be returned.
 fn filter_store(records: Vec<StringRecord>, list: Vec<String>) -> Result<Vec<StringRecord>> {
     let mut filtered_records = vec![];
 
     for num in list {
         let num = format!("-{}", &num);
         for item in records.clone().into_iter() {
-            if item.get(0).unwrap().to_owned().contains(&num) {
+            if item
+                .get(Field::Po.get())
+                .expect("Was unable to get the PO")
+                .to_owned()
+                .contains(&num)
+            {
                 filtered_records.push(item)
             }
         }
@@ -65,37 +98,42 @@ fn filter_store(records: Vec<StringRecord>, list: Vec<String>) -> Result<Vec<Str
     Ok(filtered_records)
 }
 
-// has_rfid() returns a `true` if an item is _thought_ to have a RFID tag already applied
-// from the factory.
-//
-// Some items already have an RFID tag applied, or will have one in the near future. Items
-// that may have said RFID will have a `$` charter at the end of the  item name description.
-//
-// The reason we care to know this information within the context of this application is because
-// if an item already has an RFID tag, we do not need to print an RFID tag. This function dictates
-// weather the qty is left as is or set to `0`.
+/// has_rfid() returns a `true` if an item is _thought_ to have a RFID tag already applied
+/// from the factory.
+///
+/// Some items already have an RFID tag applied, or will have one in the near future. Items
+/// that may have said RFID will have a `$` charter at the end of the  item name description.
+///
+/// The reason we care to know this information within the context of this application is because
+/// if an item already has an RFID tag, we do not need to print an RFID tag. This function dictates
+/// weather the qty is left as is or set to `0`.
 fn has_rfid(record: &StringRecord) -> bool {
-    if record.get(4).unwrap().to_string().contains("$") {
+    if record
+        .get(Field::StyleDesc.get())
+        .unwrap()
+        .to_string()
+        .contains("$")
+    {
         return true;
     }
 
     return false;
 }
 
-// list() takes a path to a text file which contains a list of numbers store numbers.
-//
-// The csv files received for purchase orders for direct to store includes orders made for a
-// variety of different stores. Each store is identified by a _store number_.
-//
-// This function reads the text file the end user creates which lists all the store numbers
-// we are interested in. Each store number contains three digits, for example store `1` would
-// be written as `001. Each of the store numbers _must_ be written using a three digit format
-// or errors, such as items duplication, will occur. Also, each store number must be separated by
-// comma, `,`, for the `list` function to work.
-//
-// TODO: Come up with a better and more robust method to acquire store numbers from the user.
-// TODO: Perhaps using a format such as TOML.
-// TODO: Also, write checks and tests to catch user errors when store numbers are added, such as one or two digits for a store number.
+/// list() takes a path to a text file which contains a list of numbers store numbers.
+///
+/// The csv files received for purchase orders for direct to store includes orders made for a
+/// variety of different stores. Each store is identified by a _store number_.
+///
+/// This function reads the text file the end user creates which lists all the store numbers
+/// we are interested in. Each store number contains three digits, for example store `1` would
+/// be written as `001. Each of the store numbers _must_ be written using a three digit format
+/// or errors, such as items duplication, will occur. Also, each store number must be separated by
+/// comma, `,`, for the `list` function to work.
+///
+/// TODO: Come up with a better and more robust method to acquire store numbers from the user.
+/// TODO: Perhaps using a format such as TOML.
+/// TODO: Also, write checks and tests to catch user errors when store numbers are added, such as one or two digits for a store number.
 fn list(path: PathBuf) -> Vec<String> {
     info!("Entering list()");
 
@@ -154,34 +192,38 @@ fn write_file(
         for item in records.iter() {
             debug!(
                 "The item being worked on: {} with UPC: {}",
-                &item.get(0).unwrap().to_string(),
-                &item.get(6).unwrap().to_string(),
+                &item.get(Field::Po.get()).unwrap().to_string(),
+                &item.get(Field::Upc.get()).unwrap().to_string(),
             );
+
             // If an item contains a `$` in the name description, then the qty should be set to `0`.
             // See comments for `has_rfid()`.
-            if has_rfid(item) && !print_all && item.get(0).unwrap().to_owned() == store {
+            if has_rfid(item)
+                && !print_all
+                && item.get(Field::Po.get()).unwrap().to_owned() == store
+            {
                 wtr.serialize(Order {
-                    po: item.get(0).unwrap().to_owned(),
-                    style_code: item.get(1).unwrap().to_owned(),
-                    color_code: item.get(2).unwrap().to_owned(),
-                    msrp_size: item.get(3).unwrap().to_owned(),
-                    style_desc: item.get(4).unwrap().to_owned(),
-                    color_desc: item.get(5).unwrap().to_owned(),
-                    upc: item.get(6).unwrap().to_owned(),
+                    po: item.get(Field::Po.get()).unwrap().to_owned(),
+                    style_code: item.get(Field::Style.get()).unwrap().to_owned(),
+                    color_code: item.get(Field::ColorCode.get()).unwrap().to_owned(),
+                    msrp_size: item.get(Field::Size.get()).unwrap().to_owned(),
+                    style_desc: item.get(Field::StyleDesc.get()).unwrap().to_owned(),
+                    color_desc: item.get(Field::ColorDesc.get()).unwrap().to_owned(),
+                    upc: item.get(Field::Upc.get()).unwrap().to_owned(),
                     store_num: "".to_owned(), // This field must always be an empty string
                     qty: "0".to_owned(),      // If it `has_rfid` is `true` then set qty to 0
                 })?;
-            } else if item.get(0).unwrap().to_owned() == store {
+            } else if item.get(Field::Po.get()).unwrap().to_owned() == store {
                 wtr.serialize(Order {
-                    po: item.get(0).unwrap().to_owned(),
-                    style_code: item.get(1).unwrap().to_owned(),
-                    color_code: item.get(2).unwrap().to_owned(),
-                    msrp_size: item.get(3).unwrap().to_owned(),
-                    style_desc: item.get(4).unwrap().to_owned(),
-                    color_desc: item.get(5).unwrap().to_owned(),
-                    upc: item.get(6).unwrap().to_owned(),
+                    po: item.get(Field::Po.get()).unwrap().to_owned(),
+                    style_code: item.get(Field::Style.get()).unwrap().to_owned(),
+                    color_code: item.get(Field::ColorCode.get()).unwrap().to_owned(),
+                    msrp_size: item.get(Field::Size.get()).unwrap().to_owned(),
+                    style_desc: item.get(Field::StyleDesc.get()).unwrap().to_owned(),
+                    color_desc: item.get(Field::ColorDesc.get()).unwrap().to_owned(),
+                    upc: item.get(Field::Upc.get()).unwrap().to_owned(),
                     store_num: "".to_owned(), // This field must always be an empty string
-                    qty: item.get(8).unwrap().to_owned(),
+                    qty: item.get(Field::Qty.get()).unwrap().to_owned(),
                 })?;
             }
         }
@@ -191,6 +233,7 @@ fn write_file(
     Ok(())
 }
 
+/// Struct used when constructing a report
 struct Report {
     num_stores: String,
     total_labels: String,
@@ -199,7 +242,7 @@ struct Report {
     boxes: String,
 }
 
-// Produce a report of stores in a PO and the number of items
+/// Produce a report of stores in a PO and the number of items
 fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<Report> {
     info!("Entering produce_report()");
     let store_list: Vec<String> = list(list_path);
@@ -262,8 +305,9 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<Report> {
         }
 
         // Reports by store number
+        // TODO: Create custom Display for struct Report.
         println!(
-            "Store {} - TOTAL: {}. WITH RFID: {} MAY HAVE RFID: {}. {} boxes.",
+            "Store {} - TOTAL: {}. WITH RFID: {} WITHOUT RFID: {}. {} boxes.",
             store_number,
             with_rfid + without_rfid,
             with_rfid,
@@ -364,6 +408,7 @@ impl Gui {
     }
 }
 
+/// The implementation of Lisa's GUI mode.
 impl eframe::App for Gui {
     // TODO: Major need for refactoring. Move logic out of GUI code.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -507,8 +552,11 @@ impl eframe::App for Gui {
 
                         ui.vertical_centered(|ui| {
                             if ui.button("Run Reports").clicked() {
-                                println!("Reports work.");
-                                windows::report::report_win();
+                                let list_path =
+                                    Gui::get_path(self, PathKind::List).unwrap().to_owned();
+                                let read_path =
+                                    Gui::get_path(self, PathKind::Input).unwrap().to_owned();
+                                produce_report(list_path, read_path);
                             }
                         });
                     })
@@ -517,6 +565,7 @@ impl eframe::App for Gui {
     }
 }
 
+/// Function that calls for Lisa's GUI mode to run.
 fn run_gui() {
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
@@ -525,6 +574,7 @@ fn run_gui() {
     eframe::run_native("LISA", options, Box::new(|_cc| Box::new(Gui::default())));
 }
 
+/// Cli holds all possible user flags that is parsed by [Calp](https://docs.rs/clap/latest/clap/).
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
@@ -547,6 +597,8 @@ struct Cli {
     #[clap(long = "gui", exclusive = true)]
     gui: bool,
 }
+
+/// Runs Lisa
 fn run_app() -> Result<()> {
     info!("[run_app] Entering run_app()");
     let args = Cli::parse();
@@ -571,7 +623,7 @@ fn run_app() -> Result<()> {
         // TODO: Fix the `true` arm: produce_report() is returning a Report.
         true => {
             // produce_report(list_path, read_path)?
-            print!("is_report: True");
+            panic!("\nReports is currently unavailable from the command line.\nUse Lisa in GUI mode to use reports.\n\t Run: Lisa --gui\n");
         }
         false => produce_po_files(list_path, read_path, output_path, print_all)?,
     }
