@@ -3,7 +3,7 @@ authors = ["Joel Montes de Oca"]
 description = "This application separates purchas orders from various stores found in a large csv file into individual csv files."
 edition = "2021"
 name = "lisa"
-version = "2.0.0"
+version = "2.0.1"
 readme = "README.md"
 repository = "https://github.com/JoelMon/lisa/"
 publish = false
@@ -24,7 +24,7 @@ eframe = "0.18.0"
 egui = "0.18.1"
 log = "0.4.17"
 pretty_env_logger = "0.4.0"
-rfd = "0.8.4"
+rfd = "0.9.1"
 
 [dependencies.serde]
 features = ["derive"]
