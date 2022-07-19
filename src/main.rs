@@ -307,11 +307,11 @@ fn produce_report(list_path: PathBuf, read_path: PathBuf) -> Result<Report> {
         // Reports by store number
         // TODO: Create custom Display for struct Report.
         println!(
-            "Store {} - TOTAL: {}. WITH RFID: {} WITHOUT RFID: {}. {} boxes.",
+            "Store {} - TOTAL: {}. WITH RFID: {} WITHOUT RFID: {}. |{} box(es)|",
             store_number,
             with_rfid + without_rfid,
-            with_rfid,
             without_rfid,
+            with_rfid,
             ((with_rfid as f32 + without_rfid as f32) / 60.0).ceil()
         );
 
